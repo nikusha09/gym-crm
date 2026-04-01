@@ -1,4 +1,4 @@
-package com.krki.gym_crm;
+package com.gym;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
