@@ -35,7 +35,8 @@ public class TrainingTypeController {
 
         List<TrainingTypeResponse> response = trainingTypeService.findAll()
                 .stream()
-                .map(t -> new TrainingTypeResponse(t.getId(), t.getTrainingTypeName()))
+                .map(trainingType -> new TrainingTypeResponse(
+                        trainingType.getId(), trainingType.getTrainingTypeName()))
                 .toList();
 
         return ResponseEntity.ok(response);

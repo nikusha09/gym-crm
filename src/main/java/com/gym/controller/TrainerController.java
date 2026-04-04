@@ -117,7 +117,7 @@ public class TrainerController {
                 .getTrainings(username, request.getFromDate(), request.getToDate(),
                         request.getTraineeName())
                 .stream()
-                .map(t -> trainerMapper.toTrainerTrainingResponse(t))
+                .map(training -> trainerMapper.toTrainerTrainingResponse(training))
                 .toList();
 
         return ResponseEntity.ok(response);

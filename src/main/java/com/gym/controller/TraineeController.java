@@ -149,7 +149,7 @@ public class TraineeController {
 
         List<Trainer> trainers = traineeService.getUnassignedTrainers(username);
         List<TrainerSummaryResponse> response = trainers.stream()
-                .map(t -> trainerMapper.toTrainerSummary(t))
+                .map(trainer -> trainerMapper.toTrainerSummary(trainer))
                 .toList();
 
         return ResponseEntity.ok(response);
@@ -167,14 +167,14 @@ public class TraineeController {
         log.info("Update trainers list | traineeUsername={}", username);
 
         List<Trainer> trainers = request.getTrainerUsernames().stream()
-                .map(u -> trainerService.getTrainer(u)
-                        .orElseThrow(() -> new EntityNotFoundException("Trainer", u)))
+                .map(trainerUsername -> trainerService.getTrainer(trainerUsername)
+                        .orElseThrow(() -> new EntityNotFoundException("Trainer", trainerUsername)))
                 .toList();
 
         traineeService.updateTrainers(username, new ArrayList<>(trainers));
 
         List<TrainerSummaryResponse> response = trainers.stream()
-                .map(t -> trainerMapper.toTrainerSummary(t))
+                .map(trainer -> trainerMapper.toTrainerSummary(trainer))
                 .toList();
 
         log.info("Trainer list updated | traineeUsername={}", username);
@@ -194,7 +194,7 @@ public class TraineeController {
         List<TraineeTrainingResponse> response = traineeService
                 .getTrainings(username, request.getFromDate(), request.getToDate(), request.getTrainerName(), request.getTrainingType())
                 .stream()
-                .map(t -> traineeMapper.toTraineeTrainingResponse(t))
+                .map(training -> traineeMapper.toTraineeTrainingResponse(training))
                 .toList();
 
         return ResponseEntity.ok(response);
