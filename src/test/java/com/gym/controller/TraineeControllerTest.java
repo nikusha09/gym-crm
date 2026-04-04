@@ -88,7 +88,7 @@ class TraineeControllerTest {
         request.setLastName("Smith");
 
         when(traineeMapper.toEntity(any())).thenReturn(trainee);
-        doNothing().when(traineeService).createTrainee(trainee);
+        when(traineeService.createTrainee(any())).thenReturn("rawPassword");
         doNothing().when(traineeMetrics).incrementRegistrationCounter();
 
         mockMvc.perform(post("/api/trainee/register")
@@ -96,7 +96,7 @@ class TraineeControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value("John.Smith"))
-                .andExpect(jsonPath("$.password").value("pass123456"));
+                .andExpect(jsonPath("$.password").value("rawPassword"));
 
         verify(traineeMetrics).incrementRegistrationCounter();
     }

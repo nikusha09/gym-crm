@@ -78,7 +78,7 @@ class TrainerControllerTest {
         request.setSpecializationId(1L);
 
         when(trainerMapper.toEntity(any())).thenReturn(trainer);
-        doNothing().when(trainerService).createTrainer(trainer);
+        when(trainerService.createTrainer(any())).thenReturn("rawPassword");
         doNothing().when(trainerMetrics).incrementRegistrationCounter();
 
         mockMvc.perform(post("/api/trainer/register")
@@ -86,7 +86,7 @@ class TrainerControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.username").value("Jane.Doe"))
-                .andExpect(jsonPath("$.password").value("pass123456"));
+                .andExpect(jsonPath("$.password").value("rawPassword"));
 
         verify(trainerMetrics).incrementRegistrationCounter();
     }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,6 +32,9 @@ class TraineeServiceImplTest {
 
     @Mock
     private UsernamePasswordGenerator generator;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
@@ -52,16 +56,19 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    @DisplayName("createTrainee: success — sets username and password, saves")
+    @DisplayName("createTrainee: success — sets username, encodes password, saves, returns raw password")
     void createTrainee_success() {
         when(traineeRepository.findAll()).thenReturn(List.of());
         when(generator.generateUsername("John", "Smith", List.of())).thenReturn("John.Smith");
-        when(generator.generatePassword()).thenReturn("pass123456");
+        when(generator.generatePassword()).thenReturn("rawPassword");
+        when(passwordEncoder.encode("rawPassword")).thenReturn("encodedPassword");
 
-        traineeService.createTrainee(trainee);
+        String result = traineeService.createTrainee(trainee);
 
+        assertEquals("rawPassword", result);
         assertEquals("John.Smith", user.getUsername());
-        assertEquals("pass123456", user.getPassword());
+        assertEquals("encodedPassword", user.getPassword());
+        verify(passwordEncoder).encode("rawPassword");
         verify(traineeRepository).save(trainee);
     }
 
@@ -159,13 +166,15 @@ class TraineeServiceImplTest {
     }
 
     @Test
-    @DisplayName("changePassword: success — updates password and saves")
+    @DisplayName("changePassword: success — encodes new password and saves")
     void changePassword_success() {
         when(traineeRepository.findByUserUsername("John.Smith")).thenReturn(Optional.of(trainee));
+        when(passwordEncoder.encode("newPassword1")).thenReturn("encodedNewPassword");
 
         traineeService.changePassword("John.Smith", "oldPassword", "newPassword1");
 
-        assertEquals("newPassword1", user.getPassword());
+        assertEquals("encodedNewPassword", user.getPassword());
+        verify(passwordEncoder).encode("newPassword1");
         verify(traineeRepository).save(trainee);
     }
 

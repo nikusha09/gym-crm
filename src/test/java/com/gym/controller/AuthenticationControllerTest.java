@@ -2,11 +2,12 @@ package com.gym.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gym.dto.request.ChangePasswordRequest;
-import com.gym.exception.AuthenticationException;
 import com.gym.exception.GlobalExceptionHandler;
 import com.gym.model.Trainee;
 import com.gym.model.User;
-import com.gym.service.AuthenticationService;
+import com.gym.security.jwt.JwtUtil;
+import com.gym.security.service.LoginAttemptService;
+import com.gym.security.service.TokenBlacklistService;
 import com.gym.service.TraineeService;
 import com.gym.service.TrainerService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -24,19 +28,17 @@ import java.util.Optional;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthenticationControllerTest {
 
-    @Mock
-    private AuthenticationService authenticationService;
-
-    @Mock
-    private TraineeService traineeService;
-
-    @Mock
-    private TrainerService trainerService;
+    @Mock private AuthenticationManager authenticationManager;
+    @Mock private JwtUtil jwtUtil;
+    @Mock private LoginAttemptService loginAttemptService;
+    @Mock private TokenBlacklistService tokenBlacklistService;
+    @Mock private TraineeService traineeService;
+    @Mock private TrainerService trainerService;
 
     @InjectMocks
     private AuthenticationController authenticationController;
@@ -55,35 +57,67 @@ class AuthenticationControllerTest {
 
         User user = new User();
         user.setUsername("John.Smith");
-        user.setPassword("pass123456");
+        user.setPassword("encodedPassword");
         trainee = new Trainee();
         trainee.setUser(user);
     }
 
     @Test
-    @DisplayName("GET /api/auth/login: 200 on valid credentials")
+    @DisplayName("POST /api/auth/login: 200 with JWT token on valid credentials")
     void login_validCredentials_returns200() throws Exception {
-        doNothing().when(authenticationService).authenticate("John.Smith", "pass123456");
+        when(loginAttemptService.isBlocked("John.Smith")).thenReturn(false);
+        when(authenticationManager.authenticate(any())).thenReturn(
+                new UsernamePasswordAuthenticationToken("John.Smith", "pass123456"));
+        when(jwtUtil.generateToken("John.Smith")).thenReturn("mocked.jwt.token");
 
-        mockMvc.perform(get("/api/auth/login")
+        mockMvc.perform(post("/api/auth/login")
                         .header("Username", "John.Smith")
                         .header("Password", "pass123456"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("mocked.jwt.token"));
 
-        verify(authenticationService).authenticate("John.Smith", "pass123456");
+        verify(loginAttemptService).loginSucceeded("John.Smith");
     }
 
     @Test
-    @DisplayName("GET /api/auth/login: 401 on invalid credentials")
+    @DisplayName("POST /api/auth/login: 401 on invalid credentials")
     void login_invalidCredentials_returns401() throws Exception {
-        doThrow(new AuthenticationException("John.Smith"))
-                .when(authenticationService).authenticate("John.Smith", "wrongPassword");
+        when(loginAttemptService.isBlocked("John.Smith")).thenReturn(false);
+        when(authenticationManager.authenticate(any()))
+                .thenThrow(new BadCredentialsException("Bad credentials"));
 
-        mockMvc.perform(get("/api/auth/login")
+        mockMvc.perform(post("/api/auth/login")
                         .header("Username", "John.Smith")
                         .header("Password", "wrongPassword"))
                 .andExpect(status().isUnauthorized());
+
+        verify(loginAttemptService).loginFailed("John.Smith");
     }
+
+    @Test
+    @DisplayName("POST /api/auth/login: 429 when user is blocked")
+    void login_blockedUser_returns429() throws Exception {
+        when(loginAttemptService.isBlocked("John.Smith")).thenReturn(true);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .header("Username", "John.Smith")
+                        .header("Password", "pass123456"))
+                .andExpect(status().isTooManyRequests());
+
+        verifyNoInteractions(authenticationManager);
+        verifyNoInteractions(jwtUtil);
+    }
+
+    @Test
+    @DisplayName("POST /api/auth/logout: 200 and token blacklisted")
+    void logout_validToken_returns200() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                        .header("Authorization", "Bearer mocked.jwt.token"))
+                .andExpect(status().isOk());
+
+        verify(tokenBlacklistService).blacklist("mocked.jwt.token");
+    }
+
 
     @Test
     @DisplayName("PUT /api/auth/password: 200 when trainee changes password")
@@ -113,7 +147,8 @@ class AuthenticationControllerTest {
         request.setNewPassword("newPass");
 
         when(traineeService.getTrainee("Jane.Doe")).thenReturn(Optional.empty());
-        when(trainerService.getTrainer("Jane.Doe")).thenReturn(Optional.of(new com.gym.model.Trainer()));
+        when(trainerService.getTrainer("Jane.Doe"))
+                .thenReturn(Optional.of(new com.gym.model.Trainer()));
 
         mockMvc.perform(put("/api/auth/password")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -141,7 +176,7 @@ class AuthenticationControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /api/auth/password: 400 when request body is invalid")
+    @DisplayName("PUT /api/auth/password: 400 when request fields are blank")
     void changePassword_blankFields_returns400() throws Exception {
         ChangePasswordRequest request = new ChangePasswordRequest();
         request.setUsername("");
