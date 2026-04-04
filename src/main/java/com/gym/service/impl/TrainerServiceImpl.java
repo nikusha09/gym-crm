@@ -9,6 +9,7 @@ import com.gym.service.TrainerService;
 import com.gym.util.UsernamePasswordGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     private TrainerRepository repository;
     private UsernamePasswordGenerator generator;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     public void setRepository(TrainerRepository repository) { this.repository = repository; }
@@ -29,9 +31,12 @@ public class TrainerServiceImpl implements TrainerService {
     @Autowired
     public void setGenerator(UsernamePasswordGenerator generator) { this.generator = generator; }
 
+    @Autowired
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) { this.passwordEncoder = passwordEncoder; }
+
     @Override
     @Transactional
-    public void createTrainer(Trainer trainer) {
+    public String createTrainer(Trainer trainer) {
         validateTrainerForCreate(trainer);
         String username = generator.generateUsername(
                 trainer.getUser().getFirstName(),
@@ -42,9 +47,15 @@ public class TrainerServiceImpl implements TrainerService {
                         .toList()
         );
         trainer.getUser().setUsername(username);
-        trainer.getUser().setPassword(generator.generatePassword());
+
+        String rawPassword = generator.generatePassword();
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+        trainer.getUser().setPassword(encodedPassword);
+
         repository.save(trainer);
+
         log.info("Trainer created with username: {}", username);
+        return rawPassword;
     }
 
     @Override
@@ -76,7 +87,7 @@ public class TrainerServiceImpl implements TrainerService {
             throw new ValidationException("New password must not be blank");
         Trainer trainer = repository.findByUserUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Trainer", username));
-        trainer.getUser().setPassword(newPassword);
+        trainer.getUser().setPassword(passwordEncoder.encode(newPassword));
         repository.save(trainer);
         log.info("Password changed for trainer: {}", username);
     }

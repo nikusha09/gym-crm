@@ -54,8 +54,7 @@ public class TrainerController {
                 request.getFirstName(), request.getLastName());
 
         Trainer trainer = trainerMapper.toEntity(request);
-
-        trainerService.createTrainer(trainer);
+        String rawPassword = trainerService.createTrainer(trainer);
         trainerMetrics.incrementRegistrationCounter();
 
         log.info("Trainer registered | username={}", trainer.getUser().getUsername());
@@ -63,7 +62,7 @@ public class TrainerController {
                 .status(HttpStatus.CREATED)
                 .body(new RegistrationResponse(
                         trainer.getUser().getUsername(),
-                        trainer.getUser().getPassword()));
+                        rawPassword));
     }
 
     @GetMapping

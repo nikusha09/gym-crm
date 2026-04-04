@@ -71,8 +71,7 @@ public class TraineeController {
                 request.getFirstName(), request.getLastName());
 
         Trainee trainee = traineeMapper.toEntity(request);
-
-        traineeService.createTrainee(trainee);
+        String rawPassword = traineeService.createTrainee(trainee);
         traineeMetrics.incrementRegistrationCounter();
 
         log.info("Trainee registered | username={}", trainee.getUser().getUsername());
@@ -81,7 +80,7 @@ public class TraineeController {
                 .status(HttpStatus.CREATED)
                 .body(new RegistrationResponse(
                         trainee.getUser().getUsername(),
-                        trainee.getUser().getPassword()));
+                        rawPassword));
     }
 
     @GetMapping

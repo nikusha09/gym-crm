@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TraineeService {
-    void createTrainee(Trainee trainee);
+    String createTrainee(Trainee trainee);
     void updateTrainee(Trainee trainee);
     void deleteByUsername(String username);
     Optional<Trainee> getTrainee(String username);

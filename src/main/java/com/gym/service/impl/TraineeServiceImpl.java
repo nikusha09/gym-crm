@@ -10,6 +10,7 @@ import com.gym.service.TraineeService;
 import com.gym.util.UsernamePasswordGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ public class TraineeServiceImpl implements TraineeService {
 
     private TraineeRepository traineeRepository;
     private UsernamePasswordGenerator generator;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     public void setTraineeRepository(TraineeRepository traineeRepository) { this.traineeRepository = traineeRepository; }
@@ -30,9 +32,12 @@ public class TraineeServiceImpl implements TraineeService {
     @Autowired
     public void setGenerator(UsernamePasswordGenerator generator) { this.generator = generator; }
 
+    @Autowired
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) { this.passwordEncoder = passwordEncoder; }
+
     @Override
     @Transactional
-    public void createTrainee(Trainee trainee) {
+    public String createTrainee(Trainee trainee) {
         validateTraineeForCreate(trainee);
         String username = generator.generateUsername(
                 trainee.getUser().getFirstName(),
@@ -43,9 +48,15 @@ public class TraineeServiceImpl implements TraineeService {
                         .toList()
         );
         trainee.getUser().setUsername(username);
-        trainee.getUser().setPassword(generator.generatePassword());
+
+        String rawPassword = generator.generatePassword();
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+        trainee.getUser().setPassword(encodedPassword);
+
         traineeRepository.save(trainee);
+
         log.info("Trainee created with username: {}", username);
+        return rawPassword;
     }
 
     @Override
@@ -87,7 +98,7 @@ public class TraineeServiceImpl implements TraineeService {
         }
         Trainee trainee = traineeRepository.findByUserUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Trainee", username));
-        trainee.getUser().setPassword(newPassword);
+        trainee.getUser().setPassword(passwordEncoder.encode(newPassword));
         traineeRepository.save(trainee);
         log.info("Password changed for trainee: {}", username);
     }
