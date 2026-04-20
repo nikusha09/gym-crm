@@ -1,4 +1,4 @@
-package com.workload.trainer_workload_service;
+package com.workload;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,5 +9,4 @@ public class TrainerWorkloadServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(TrainerWorkloadServiceApplication.class, args);
 	}
-
 }
