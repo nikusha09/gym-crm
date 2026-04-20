@@ -1,5 +1,6 @@
 package com.gym.service.impl;
 
+import com.gym.client.WorkloadClient;
 import com.gym.exception.ValidationException;
 import com.gym.model.*;
 import com.gym.repository.TrainingRepository;
@@ -24,6 +25,9 @@ class TrainingServiceImplTest {
     @Mock
     private TrainingRepository trainingRepository;
 
+    @Mock
+    private WorkloadClient workloadClient;
+
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
@@ -31,13 +35,32 @@ class TrainingServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        trainingService = new TrainingServiceImpl();
+        trainingService.setTrainingRepository(trainingRepository);
+        trainingService.setWorkloadClient(workloadClient);
+
+        User trainerUser = new User();
+        trainerUser.setUsername("John.Smith");
+        trainerUser.setFirstName("John");
+        trainerUser.setLastName("Smith");
+        trainerUser.setActive(true);
+
+        Trainer trainer = new Trainer();
+        trainer.setUser(trainerUser);
+
+        User traineeUser = new User();
+        traineeUser.setUsername("Jane.Doe");
+
+        Trainee trainee = new Trainee();
+        trainee.setUser(traineeUser);
+
         training = new Training();
         training.setTrainingName("Morning Yoga");
-        training.setTrainingType(new TrainingType("Yoga"));
-        training.setTrainingDate(LocalDate.of(2024, 6, 1));
+        training.setTrainingDate(LocalDate.of(2025, 3, 15));
         training.setTrainingDuration(60);
-        training.setTrainee(new Trainee());
-        training.setTrainer(new Trainer());
+        training.setTrainer(trainer);
+        training.setTrainee(trainee);
+        training.setTrainingType(new TrainingType("Yoga"));
     }
 
     @Test
