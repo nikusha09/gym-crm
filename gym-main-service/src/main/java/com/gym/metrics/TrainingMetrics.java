@@ -11,12 +11,17 @@ import org.springframework.stereotype.Component;
 public class TrainingMetrics {
 
     private final Counter trainingAddedCounter;
+    private final Counter trainingDeletedCounter;
 
     @Autowired
     public TrainingMetrics(MeterRegistry meterRegistry, TrainingRepository trainingRepository) {
 
         this.trainingAddedCounter = Counter.builder("gym.training.added.total")
                 .description("Total number of trainings added")
+                .register(meterRegistry);
+
+        this.trainingDeletedCounter = Counter.builder("gym.training.deleted.total")
+                .description("Total number of trainings deleted")
                 .register(meterRegistry);
 
         Gauge.builder("gym.training.current.total", trainingRepository, TrainingRepository::count)
@@ -26,5 +31,9 @@ public class TrainingMetrics {
 
     public void incrementTrainingAddedCounter() {
         trainingAddedCounter.increment();
+    }
+
+    public void incrementTrainingDeletedCounter() {
+        trainingDeletedCounter.increment();
     }
 }
