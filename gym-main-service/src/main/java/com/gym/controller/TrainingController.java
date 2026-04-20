@@ -59,4 +59,19 @@ public class TrainingController {
         log.info("Training added | name={}", request.getTrainingName());
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete training", description = "Delete an existing training session by ID")
+    @ApiResponse(responseCode = "204", description = "Training deleted successfully")
+    @ApiResponse(responseCode = "401", description = "Authentication failed")
+    @ApiResponse(responseCode = "404", description = "Training not found")
+    public ResponseEntity<Void> deleteTraining(@PathVariable Long id) {
+        log.info("Delete training request | trainingId={}", id);
+
+        trainingService.deleteTraining(id);
+        trainingMetrics.incrementTrainingDeletedCounter();
+
+        log.info("Training deleted | trainingId={}", id);
+        return ResponseEntity.noContent().build();
+    }
 }
