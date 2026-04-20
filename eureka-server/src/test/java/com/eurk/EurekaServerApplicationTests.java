@@ -1,4 +1,4 @@
-package com.eurk.eureka_server;
+package com.eurk;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
