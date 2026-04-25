@@ -14,12 +14,6 @@ public class TrainerWorkloadController {
 
     private final TrainerWorkloadService trainerWorkloadService;
 
-    @PostMapping
-    public ResponseEntity<Void> processWorkload(@RequestBody TrainerWorkloadRequest request) {
-        trainerWorkloadService.processWorkload(request);
-        return ResponseEntity.ok().build();
-    }
-
     @GetMapping("/{username}")
     public ResponseEntity<TrainerWorkload> getWorkload(@PathVariable String username) {
         TrainerWorkload workload = trainerWorkloadService.getWorkload(username);

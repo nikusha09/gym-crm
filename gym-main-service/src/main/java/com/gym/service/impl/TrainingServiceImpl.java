@@ -1,9 +1,9 @@
 package com.gym.service.impl;
 
-import com.gym.client.WorkloadClient;
 import com.gym.dto.request.WorkloadRequest;
 import com.gym.exception.EntityNotFoundException;
 import com.gym.exception.ValidationException;
+import com.gym.messaging.WorkloadMessageProducer;
 import com.gym.model.Trainer;
 import com.gym.model.Training;
 import com.gym.repository.TrainingRepository;
@@ -21,24 +21,23 @@ import java.util.Optional;
 public class TrainingServiceImpl implements TrainingService {
 
     private TrainingRepository trainingRepository;
-    private WorkloadClient workloadClient;
+    private WorkloadMessageProducer workloadMessageProducer;
 
     @Autowired
     public void setTrainingRepository(TrainingRepository trainingRepository) { this.trainingRepository = trainingRepository; }
 
     @Autowired
-    public void setWorkloadClient(WorkloadClient workloadClient) { this.workloadClient = workloadClient; }
+    public void setWorkloadMessageProducer(WorkloadMessageProducer workloadMessageProducer) { this.workloadMessageProducer = workloadMessageProducer; }
 
     @Override
     @Transactional
     public void addTraining(Training training) {
         validateTraining(training);
-        trainingRepository.save(training);
 
-        String token = extractTokenFromSecurityContext();
         WorkloadRequest workloadRequest = buildWorkloadRequest(training, "ADD");
-        workloadClient.sendWorkload(workloadRequest, token);
+        workloadMessageProducer.sendWorkload(workloadRequest);
 
+        trainingRepository.save(training);
         log.info("Training added: {}", training.getTrainingName());
     }
 
@@ -61,9 +60,8 @@ public class TrainingServiceImpl implements TrainingService {
         Training training = trainingRepository.findById(trainingId)
                 .orElseThrow(() -> new EntityNotFoundException("Training", trainingId.toString()));
 
-        String token = extractTokenFromSecurityContext();
         WorkloadRequest workloadRequest = buildWorkloadRequest(training, "DELETE");
-        workloadClient.sendWorkload(workloadRequest, token);
+        workloadMessageProducer.sendWorkload(workloadRequest);
 
         trainingRepository.delete(training);
     }
@@ -94,21 +92,5 @@ public class TrainingServiceImpl implements TrainingService {
                 training.getTrainingDuration(),
                 actionType
         );
-    }
-
-    private String extractTokenFromSecurityContext() {
-        try {
-            jakarta.servlet.http.HttpServletRequest request =
-                    ((jakarta.servlet.http.HttpServletRequest) org.springframework.web.context.request.RequestContextHolder
-                            .currentRequestAttributes()
-                            .resolveReference(org.springframework.web.context.request.RequestAttributes.REFERENCE_REQUEST));
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                return authHeader.substring(7);
-            }
-        } catch (Exception e) {
-            log.warn("Could not extract JWT token from request");
-        }
-        return null;
     }
 }
