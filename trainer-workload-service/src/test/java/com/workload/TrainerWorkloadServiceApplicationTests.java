@@ -1,4 +1,4 @@
-package com.workload.trainer_workload_service;
+package com.workload;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
