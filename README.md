@@ -144,6 +144,40 @@ Service starts on port `8080`. After startup, verify it appears in Eureka dashbo
 
 ---
 
+## Testing
+
+The project contains three levels of tests:
+
+- **Unit tests** — test individual components in isolation
+- **Component tests** — test each microservice independently using MockMvc and an in-memory H2 database
+- **Integration tests** — test the full messaging flow between services via ActiveMQ
+
+### Prerequisites for Integration Tests
+
+Apache ActiveMQ must be running before executing integration tests (see Step 2 above).
+
+### Running Tests
+
+**Unit tests:**
+```bash
+mvn test
+```
+
+**Component and Integration tests:**
+
+Run [CucumberTestRunner](gym-main-service/src/test/java/com/gym/cucumber/runner/CucumberTestRunner.java) 
+in `gym-main-service` and
+[ComponentTestRunner](trainer-workload-service/src/test/java/com/workload/cucumber/ComponentTestRunner.java)
+in `trainer-workload-service` to execute component and integration tests.
+
+```bash
+mvn test -Dtest=CucumberTestRunner
+```
+
+> Note: Integration tests will fail if ActiveMQ is not running.
+
+---
+
 ## Useful Endpoints
 
 ### Gym Main Service (port 8080)
