@@ -1,8 +1,5 @@
 package com.workload.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.workload.dto.TrainerWorkloadRequest;
 import com.workload.exception.GlobalExceptionHandler;
 import com.workload.model.TrainerWorkload;
 import com.workload.service.TrainerWorkloadService;
@@ -16,11 +13,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -29,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class TrainerWorkloadControllerTest {
 
     private MockMvc mockMvc;
-    private ObjectMapper objectMapper;
 
     @Mock
     private TrainerWorkloadService trainerWorkloadService;
@@ -42,43 +35,24 @@ class TrainerWorkloadControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(trainerWorkloadController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-    }
-
-    private TrainerWorkloadRequest buildRequest() {
-        TrainerWorkloadRequest request = new TrainerWorkloadRequest();
-        request.setTrainerUsername("John.Smith");
-        request.setTrainerFirstName("John");
-        request.setTrainerLastName("Smith");
-        request.setActive(true);
-        request.setTrainingDate(LocalDate.of(2025, 3, 15));
-        request.setTrainingDuration(60);
-        request.setActionType("ADD");
-        return request;
-    }
-
-    @Test
-    void processWorkload_returnsOk() throws Exception {
-        doNothing().when(trainerWorkloadService).processWorkload(any());
-
-        mockMvc.perform(post("/api/trainer-workload")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(buildRequest())))
-                .andExpect(status().isOk());
-
-        verify(trainerWorkloadService, times(1)).processWorkload(any());
     }
 
     @Test
     void getWorkload_returnsWorkload() throws Exception {
-        Map<Integer, Map<Integer, Integer>> yearMonthDuration = new HashMap<>();
-        Map<Integer, Integer> monthDuration = new HashMap<>();
-        monthDuration.put(3, 60);
-        yearMonthDuration.put(2025, monthDuration);
+        TrainerWorkload.MonthSummary monthSummary = new TrainerWorkload.MonthSummary(3, 60);
 
-        TrainerWorkload workload = new TrainerWorkload(
-                "John.Smith", "John", "Smith", true, yearMonthDuration);
+        TrainerWorkload.YearSummary yearSummary = new TrainerWorkload.YearSummary();
+        yearSummary.setYear(2025);
+        yearSummary.setMonths(new ArrayList<>());
+        yearSummary.getMonths().add(monthSummary);
+
+        TrainerWorkload workload = new TrainerWorkload();
+        workload.setUsername("John.Smith");
+        workload.setFirstName("John");
+        workload.setLastName("Smith");
+        workload.setActive(true);
+        workload.setYears(new ArrayList<>());
+        workload.getYears().add(yearSummary);
 
         when(trainerWorkloadService.getWorkload("John.Smith")).thenReturn(workload);
 
