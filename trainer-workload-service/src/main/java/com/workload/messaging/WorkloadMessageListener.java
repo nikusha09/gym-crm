@@ -99,4 +99,13 @@ public class WorkloadMessageListener {
             log.error("Failed to route message to DLQ | reason={}", e.getMessage());
         }
     }
+
+    public Exception validateAndProcess(TrainerWorkloadRequest request) {
+        try {
+            validateRequest(request);
+            return null;
+        } catch (IllegalArgumentException e) {
+            return e;
+        }
+    }
 }

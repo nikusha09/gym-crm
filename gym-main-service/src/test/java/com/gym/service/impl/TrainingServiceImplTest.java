@@ -1,7 +1,7 @@
 package com.gym.service.impl;
 
-import com.gym.client.WorkloadClient;
 import com.gym.exception.ValidationException;
+import com.gym.messaging.WorkloadMessageProducer;
 import com.gym.model.*;
 import com.gym.repository.TrainingRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +26,7 @@ class TrainingServiceImplTest {
     private TrainingRepository trainingRepository;
 
     @Mock
-    private WorkloadClient workloadClient;
+    private WorkloadMessageProducer workloadClient;
 
     @InjectMocks
     private TrainingServiceImpl trainingService;
@@ -37,7 +37,7 @@ class TrainingServiceImplTest {
     void setUp() {
         trainingService = new TrainingServiceImpl();
         trainingService.setTrainingRepository(trainingRepository);
-        trainingService.setWorkloadClient(workloadClient);
+        trainingService.setWorkloadMessageProducer(workloadClient);
 
         User trainerUser = new User();
         trainerUser.setUsername("John.Smith");
