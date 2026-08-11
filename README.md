@@ -61,21 +61,80 @@ A distributed backend system for managing gym members, trainers, trainees, and t
 
 ## Prerequisites
 
-Make sure the following are installed on your machine:
-
+### Manual Run
 - Java 17+
 - Maven 3.8+
 - Apache ActiveMQ Classic — [Download here](https://activemq.apache.org/components/classic/download/)
 - MongoDB Community Server — [Download here](https://www.mongodb.com/try/download/community)
 - MongoDB Compass (optional, for visual DB inspection) — [Download here](https://www.mongodb.com/try/download/compass)
 
+### Docker Run
+- Docker Desktop — [Download here](https://www.docker.com/products/docker-desktop/)
+
 ---
 
 ## Running the Application
 
+### Via Docker
+
+Docker is the recommended way to run the application — no manual installation of MongoDB, ActiveMQ, or PostgreSQL required.
+
+#### Local Profile (H2 + embedded data)
+
+```bash
+docker-compose up -d
+```
+
+#### Production Profile (PostgreSQL)
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+#### Stopping
+
+Stop and preserve data:
+```bash
+# local
+docker-compose down
+
+# prod
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+```
+
+Stop and delete all data:
+```bash
+# local
+docker-compose down -v
+
+# prod
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down -v
+```
+
+#### Useful Docker Commands
+
+View real-time logs:
+```bash
+docker logs -f gym-main
+```
+
+Access PostgreSQL shell (prod only):
+```bash
+docker exec -it postgres-db psql -U admin -d gymdb
+```
+
+Access container shell:
+```bash
+docker exec -it gym-main bash
+```
+
+---
+
+### Manually
+
 Follow these steps **in order** to start the full system.
 
-### Step 1 — Start MongoDB
+#### Step 1 — Start MongoDB
 
 MongoDB should start automatically as a service after installation. Verify it is running:
 
@@ -93,7 +152,7 @@ net start MongoDB
 sudo systemctl start mongod
 ```
 
-### Step 2 — Start ActiveMQ
+#### Step 2 — Start ActiveMQ
 
 Navigate to the ActiveMQ installation folder and run:
 
@@ -112,7 +171,7 @@ Username: admin
 Password: admin
 ```
 
-### Step 3 — Start Eureka Server
+#### Step 3 — Start Eureka Server
 
 ```bash
 cd eureka-server
@@ -124,7 +183,7 @@ Verify Eureka is running:
 http://localhost:8761
 ```
 
-### Step 4 — Start Trainer Workload Service
+#### Step 4 — Start Trainer Workload Service
 
 ```bash
 cd trainer-workload-service
@@ -133,7 +192,7 @@ mvn spring-boot:run
 
 Service starts on port `8081`. After startup, verify it appears in Eureka dashboard.
 
-### Step 5 — Start Gym Main Service
+#### Step 5 — Start Gym Main Service
 
 ```bash
 cd gym-main-service
@@ -165,7 +224,7 @@ mvn test
 
 **Component and Integration tests:**
 
-Run [CucumberTestRunner](gym-main-service/src/test/java/com/gym/cucumber/runner/CucumberTestRunner.java) 
+Run [CucumberTestRunner](gym-main-service/src/test/java/com/gym/cucumber/runner/CucumberTestRunner.java)
 in `gym-main-service` and
 [ComponentTestRunner](trainer-workload-service/src/test/java/com/workload/cucumber/ComponentTestRunner.java)
 in `trainer-workload-service` to execute component and integration tests.
@@ -263,49 +322,39 @@ Invalid messages (missing required fields) are automatically routed to the Dead 
 
 ---
 
-## Running Tests
-
-```bash
-# Run tests for main service
-cd gym-main-service
-mvn test
-
-# Run tests for workload service
-cd trainer-workload-service
-mvn test
-```
-
----
-
 ## Project Structure
 
 ```
 gym-crm/
-├── gym-main-service/          # Core gym management service
+├── docker-compose.yml                 # Local profile (H2 + ActiveMQ + MongoDB)
+├── docker-compose.prod.yml            # Production override (PostgreSQL)
+├── gym-main-service/                  # Core gym management service
+│   ├── Dockerfile
 │   └── src/main/java/com/gym/
-│       ├── config/            # Security, JMS configuration
-│       ├── controller/        # REST controllers
-│       ├── dto/               # Request/Response DTOs
-│       ├── exception/         # Exception handling
-│       ├── filter/            # Transaction logging filter
-│       ├── health/            # Custom health indicators
-│       ├── mapper/            # Entity mappers
-│       ├── messaging/         # JMS message producer
-│       ├── metrics/           # Custom Micrometer metrics
-│       ├── model/             # JPA entities
-│       ├── repository/        # Spring Data JPA repositories
-│       ├── security/          # JWT authentication
-│       └── service/           # Business logic
-├── trainer-workload-service/  # Trainer workload tracking service
+│       ├── config/                    # Security, JMS configuration
+│       ├── controller/                # REST controllers
+│       ├── dto/                       # Request/Response DTOs
+│       ├── exception/                 # Exception handling
+│       ├── filter/                    # Transaction logging filter
+│       ├── health/                    # Custom health indicators
+│       ├── mapper/                    # Entity mappers
+│       ├── messaging/                 # JMS message producer
+│       ├── metrics/                   # Custom Micrometer metrics
+│       ├── model/                     # JPA entities
+│       ├── repository/                # Spring Data JPA repositories
+│       ├── security/                  # JWT authentication
+│       └── service/                   # Business logic
+├── trainer-workload-service/          # Trainer workload tracking service
+│   ├── Dockerfile
 │   └── src/main/java/com/workload/
-│       ├── config/            # JMS, Security configuration
-│       ├── controller/        # REST controllers
-│       ├── dto/               # Request DTOs
-│       ├── exception/         # Exception handling
-│       ├── filter/            # Transaction logging filter
-│       ├── messaging/         # JMS message listener
-│       ├── model/             # MongoDB documents
-│       ├── repository/        # MongoDB repositories
-│       └── service/           # Business logic
-└── eureka-server/             # Service discovery server
+│       ├── config/                    # JMS, Security configuration
+│       ├── controller/                # REST controllers
+│       ├── dto/                       # Request DTOs
+│       ├── exception/                 # Exception handling
+│       ├── filter/                    # Transaction logging filter
+│       ├── messaging/                 # JMS message listener
+│       ├── model/                     # MongoDB documents
+│       ├── repository/                # MongoDB repositories
+│       └── service/                   # Business logic
+└── eureka-server/                     # Service discovery server
 ```

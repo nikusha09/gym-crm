@@ -1,0 +1,35 @@
+services:
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: gymdb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - gym-network
+
+
+  gym-main-service:
+    restart: on-failure
+    networks:
+      - gym-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/gymdb
+      - DB_USERNAME=admin
+      - DB_PASSWORD=admin
+      - JWT_SECRET=4vlg78YxPWOJSGxrz2A3BBk7q8W0vsyG5vmiBoFBM0W
+    depends_on:
+      - postgres-db
+
+networks:
+  gym-network:
+    driver: bridge
+
+volumes:
+  pgdata:
